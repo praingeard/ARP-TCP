@@ -2,13 +2,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <fcntl.h>
+#include <time.h>
 
-#define LENGTH_MSG 30
-
-char message[LENGTH_MSG] = "";
-
-void job(int *tube)
+void job(int *tube, int LENGTH_MSG)
 {
+    char message[LENGTH_MSG]; 
     int tid = getpid();
     // timer pour attendre maximum 5 secondes
     int i = 5;
@@ -17,7 +15,7 @@ void job(int *tube)
         // lecture dans le tube
         if (read(*tube, message, LENGTH_MSG) > 0)
         {
-            printf("Message du processus [%i] : %s", tid, message);
+            printf("%s", message);
             break;
         }
         sleep(1);
@@ -26,6 +24,8 @@ void job(int *tube)
 
 int main(int argc, char *argv[])
 {
+    int LENGTH_MSG = atoi(argv[1]);
+    char message[LENGTH_MSG];
     int i, n, rnd;
     srand(time(NULL));
     for (i = 0; i < LENGTH_MSG - 1; ++i)
@@ -37,7 +37,6 @@ int main(int argc, char *argv[])
                              : (n % 26) + 'A';
     }
     message[LENGTH_MSG - 1] = 0;
-    puts(message);
     int tube[2];
     pipe(tube);
     pid_t pid = fork();
@@ -49,7 +48,7 @@ int main(int argc, char *argv[])
     else if (pid == 0)
     {
         close(tube[1]);
-        job(&tube[0]);
+        job(&tube[0], LENGTH_MSG);
         close(tube[0]);
         exit(EXIT_SUCCESS);
     }

@@ -11,27 +11,27 @@
 #include <errno.h>
 
 #define FIFO_NAME "/tmp/named_fifo"
-#define LENGTH_MSG 30
 const mode_t FIFO_MODE = 0660;
-
-char message[LENGTH_MSG] = "";
 
 void * job(void * args) {
 	int fdread;
+	int *LENGTH_MSG = (int *) args;
 	if ((fdread = open(FIFO_NAME, O_RDONLY)) == -1) {
 		fprintf(stderr, "Impossible to open the pipe: %s\n",
 				strerror(errno));
 		exit(EXIT_FAILURE);
 	}
-	char buffer[LENGTH_MSG];
-	read(fdread, buffer, LENGTH_MSG);
+	char buffer[*LENGTH_MSG];
+	read(fdread, buffer, *LENGTH_MSG);
 	printf("The message is : %s", buffer);
 	pthread_exit(EXIT_SUCCESS);
 }
 
 
 
-int main() {
+int main(int argc, char *argv[]) {
+	int LENGTH_MSG = atoi(argv[1]);
+	char message[LENGTH_MSG];
     int i, n, rnd;
     srand(time(NULL));
     for (i = 0; i < LENGTH_MSG - 1; ++i)
@@ -52,7 +52,7 @@ int main() {
 		printf("Could not create fifo: %s\n", strerror(errno));
 		exit(EXIT_FAILURE);
     }
-	pthread_create(&thread, NULL, job, NULL);
+	pthread_create(&thread, NULL, job, &LENGTH_MSG);
 	int fdwrite;
 	if ((fdwrite = open(FIFO_NAME, O_WRONLY)) == -1) {
 		printf("Cannot open fifo: %s\n",

@@ -3,14 +3,14 @@
 #include<sys/socket.h>
 #include<arpa/inet.h>
 #include<unistd.h>
-
-#define LENGTH_MESSAGE 30
+#include <stdlib.h>
 
 int main(int argc , char *argv[])
 {
+	int length_message = atoi(argv[1]);
 	int socket_desc , client_sock , c , read_size;
 	struct sockaddr_in server , client;
-	char client_message[2000];
+	char client_message[2*length_message];
 	
 	//Create socket
 	socket_desc = socket(AF_INET , SOCK_STREAM , 0);

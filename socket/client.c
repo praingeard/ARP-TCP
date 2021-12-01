@@ -9,12 +9,11 @@
 #include <stdlib.h>
 #include <time.h>
 
-#define LENGTH_MSG 1000
-
 int main(int argc, char *argv[])
 {
+    int LENGTH_MSG = atoi(argv[1]);
 
-    char server_reply[2000];
+    char server_reply[2*LENGTH_MSG];
     int sock;
     struct sockaddr_in server;
 
@@ -40,7 +39,7 @@ int main(int argc, char *argv[])
     //keep communicating with server
     while (1)
     {
-        char message[LENGTH_MSG] = "";
+        char message[LENGTH_MSG];
         int i, n, rnd;
         srand(time(NULL));
         for (i = 0; i < LENGTH_MSG - 1; ++i)

@@ -6,7 +6,6 @@
 #include <time.h>
 
 #define BSIZE 10
-#define DATASZ 1000
 
 typedef struct shared_buffer
 {
@@ -20,6 +19,12 @@ typedef struct shared_buffer
         count;
 } shared_buffer_t;
 
+typedef struct {
+    shared_buffer_t* sb;
+    size_t datasize;
+}args_t;
+
+
 void sb_init(shared_buffer_t *sb)
 {
     sb->next_in = sb->next_out = sb->count = 0;
@@ -30,7 +35,11 @@ void sb_init(shared_buffer_t *sb)
 
 void *producer(void *arg)
 {
-    char message[DATASZ] = "";
+    args_t *real_args = arg;
+    size_t DATASZ = real_args->datasize;
+    printf("%li", DATASZ);
+    fflush(stdout);
+    char message[DATASZ];
     int i, n, rnd;
     srand(time(NULL));
     for (i = 0; i < DATASZ - 1; ++i)
@@ -44,7 +53,7 @@ void *producer(void *arg)
     message[DATASZ - 1] = 0;
     int k = 0;
     i = 0;
-    shared_buffer_t *sb = (shared_buffer_t *)arg;
+    shared_buffer_t *sb = (shared_buffer_t *)real_args->sb;
 
     while(1)
     {
@@ -68,9 +77,11 @@ void *producer(void *arg)
 
 void *consumer(void *arg)
 {
+    args_t *real_args = arg;
+    size_t DATASZ = real_args->datasize;
     int count = 0;
     int k = 0;
-    shared_buffer_t *sb = (shared_buffer_t *)arg;
+    shared_buffer_t *sb = (shared_buffer_t *) real_args->sb;
     while(1){
         pthread_mutex_lock(&sb->lock);
     while (sb->count == 0)
@@ -92,14 +103,18 @@ void *consumer(void *arg)
     }
 }
 
-int main()
+int main(int argc, char *argv[])
 {
     pthread_t th1, th2;
     shared_buffer_t sb;
+    int data_size = atoi(argv[1]);
 
     sb_init(&sb);
-    pthread_create(&th1, NULL, producer, &sb);
-    pthread_create(&th2, NULL, consumer, &sb);
+    args_t *args = malloc(sizeof *args);
+    args->datasize = data_size;
+    args->sb = &sb;
+    pthread_create(&th1, NULL, producer, args);
+    pthread_create(&th2, NULL, consumer, args);
     pthread_join(th1, NULL);
     pthread_join(th2, NULL);
     return 0;
