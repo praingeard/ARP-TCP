@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <time.h>
 
-#define BSIZE 10
+#define BSIZE 10000
 
 typedef struct shared_buffer
 {
@@ -22,6 +22,7 @@ typedef struct shared_buffer
 typedef struct {
     shared_buffer_t* sb;
     size_t datasize;
+    size_t buffersize;
 }args_t;
 
 
@@ -37,6 +38,7 @@ void *producer(void *arg)
 {
     args_t *real_args = arg;
     size_t DATASZ = real_args->datasize;
+    size_t buffersize = real_args->buffersize;
     printf("%li", DATASZ);
     fflush(stdout);
     char message[DATASZ];
@@ -58,7 +60,7 @@ void *producer(void *arg)
     while(1)
     {
         pthread_mutex_lock(&sb->lock);
-        while (sb->count == BSIZE)
+        while (sb->count == buffersize)
             pthread_cond_wait(&sb->new_space_cond, &sb->lock);
         pthread_mutex_unlock(&sb->lock);
         k = sb->next_in;
@@ -67,7 +69,7 @@ void *producer(void *arg)
         }
         sb->c[k] = message[i];
         i++;
-        sb->next_in = (sb->next_in + 1) % BSIZE;
+        sb->next_in = (sb->next_in + 1) % buffersize;
         pthread_mutex_lock(&sb->lock);
         sb->count++;
         pthread_mutex_unlock(&sb->lock);
@@ -79,6 +81,7 @@ void *consumer(void *arg)
 {
     args_t *real_args = arg;
     size_t DATASZ = real_args->datasize;
+    size_t buffersize = real_args->buffersize;
     int count = 0;
     int k = 0;
     shared_buffer_t *sb = (shared_buffer_t *) real_args->sb;
@@ -95,7 +98,7 @@ void *consumer(void *arg)
     if (count > DATASZ - 1){
         pthread_exit(NULL);
     }
-    sb->next_out = (sb->next_out + 1) % BSIZE;
+    sb->next_out = (sb->next_out + 1) % buffersize;
     pthread_mutex_lock(&sb->lock);
     sb->count--;
     pthread_mutex_unlock(&sb->lock);
@@ -108,10 +111,12 @@ int main(int argc, char *argv[])
     pthread_t th1, th2;
     shared_buffer_t sb;
     int data_size = atoi(argv[1]);
+    int buffer_size = atoi(argv[2]);
 
     sb_init(&sb);
     args_t *args = malloc(sizeof *args);
     args->datasize = data_size;
+    args->buffersize = buffer_size;
     args->sb = &sb;
     pthread_create(&th1, NULL, producer, args);
     pthread_create(&th2, NULL, consumer, args);

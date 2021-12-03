@@ -24,6 +24,7 @@ void job(int *tube, int LENGTH_MSG)
 
 int main(int argc, char *argv[])
 {
+    printf("%s\n", argv[1]);
     int LENGTH_MSG = atoi(argv[1]);
     char message[LENGTH_MSG];
     int i, n, rnd;
