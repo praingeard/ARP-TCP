@@ -46,6 +46,7 @@ int main(int argc, char *argv[])
     }
 
     //keep communicating with server
+    clock_t begin = clock();
     while (number_of_sends != 0)
     {
         char message[LENGTH_MSG];
@@ -74,9 +75,6 @@ int main(int argc, char *argv[])
             puts("recv failed");
             break;
         }
-
-        puts("Server reply :");
-        puts(server_reply);
         number_of_sends --;
     }
     if (last_send != 0){
@@ -105,10 +103,10 @@ int main(int argc, char *argv[])
         {
             puts("recv failed");
         }
-
-        puts("Server reply :");
-        puts(server_reply);
     }
+    clock_t end = clock();
+    double time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
+    printf("sent %iMB in %f seconds\n",atoi(argv[1])/1000000, time_spent);
     sleep(1);
     close(sock);
     return 0;

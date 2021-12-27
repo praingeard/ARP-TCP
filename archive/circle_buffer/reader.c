@@ -13,10 +13,10 @@ char shm_fn[] = "my_shm";
 char sem_fn[] = "my_sem_1";
 char sem2_fn[] = "my_sem_2";
 /**** READER ****/
-int main()
+int main(int argc, char *argv[])
 {
-    size_t DATASZ = 100;
-    size_t buffersize = 5;
+    size_t DATASZ = atoi(argv[1]);
+    size_t buffersize = atoi(argv[2]);
 
     caddr_t shmptr;
     int shmdes, index;
@@ -50,7 +50,10 @@ int main()
         return 1;
     }
     /* Lock the semaphore */
-    printf("waiting \n");
+    clock_t begin = clock();
+
+/* here, do your time-consuming job */
+
 
     int count = 0;
     int next_out = 0;
@@ -58,11 +61,12 @@ int main()
     {
         sem_wait(sem_new_data);
         char new_char = shmptr[next_out];
-        printf("%c", new_char);
-        fflush(stdout);
         count++;
         if (count > DATASZ - 1)
         {
+            clock_t end = clock();
+            double time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
+            printf("sent %liMB in %f seconds\n",DATASZ/1000000, time_spent);
             break;
         }
         next_out = (next_out + 1) % buffersize;
