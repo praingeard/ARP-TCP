@@ -6,9 +6,6 @@
 
 void job(int *tube, int number_sends, int last_send, int LENGTH_MSG, int full_size)
 {
-    clock_t begin;
-    clock_t end;
-    begin = clock();
     char message[LENGTH_MSG];
     char last_message[last_send];
     int tid = getpid();
@@ -22,6 +19,7 @@ void job(int *tube, int number_sends, int last_send, int LENGTH_MSG, int full_si
             {
                 // lecture dans le tube
                 read(*tube, message, LENGTH_MSG);
+                //printf("%s\n", message);
                 usleep(100);
             }
         }
@@ -29,17 +27,11 @@ void job(int *tube, int number_sends, int last_send, int LENGTH_MSG, int full_si
         {
             if (read(*tube, last_message, last_send) > 0)
             {
-                end = clock();
-                double time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
-                printf("sent %iMB in %f seconds\n", full_size / 1000000, time_spent);
                 break;
             }
         }
         else
         {
-            end = clock();
-            double time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
-            printf("sent %iMB in %f seconds\n", full_size / 1000000, time_spent);
             break;
         }
         //sleep(1);
@@ -48,6 +40,8 @@ void job(int *tube, int number_sends, int last_send, int LENGTH_MSG, int full_si
 
 int main(int argc, char *argv[])
 {
+    clock_t begin;
+    clock_t end;
     int LENGTH_MSG = atoi(argv[1]);
     int number_of_sends = 0;
     int last_send = LENGTH_MSG;
@@ -60,6 +54,7 @@ int main(int argc, char *argv[])
     }
     int tube[2];
     pipe(tube);
+    begin = clock();
     pid_t pid = fork();
     if (pid == -1)
     {
@@ -71,16 +66,16 @@ int main(int argc, char *argv[])
         close(tube[1]);
         job(&tube[0], number_of_sends, last_send, LENGTH_MSG, atoi(argv[1]));
         close(tube[0]);
-        exit(EXIT_SUCCESS);
     }
     else
     {
         char *message = NULL;
         char *last_message = NULL;
         int i, n, rnd;
+        close(tube[0]);
+        message = malloc(LENGTH_MSG);
         for (int j = 0; j < number_of_sends; j++)
         {
-            message = malloc(LENGTH_MSG);
             srand(time(NULL));
             if (number_of_sends != 0)
             {
@@ -97,9 +92,9 @@ int main(int argc, char *argv[])
             }
 
             write(tube[1], message, LENGTH_MSG);
-            usleep(10000);
-            free(message);
+            //usleep(10000);
         }
+        free(message);
         if (last_send != 0)
         {
             last_message = malloc(last_send);
@@ -115,7 +110,9 @@ int main(int argc, char *argv[])
             write(tube[1], last_message, last_send);
             free(last_message);
         }
-        close(tube[0]);
         close(tube[1]);
+        end = clock();
+        double time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
+        printf("sent %iMB in %f seconds\n", atoi(argv[1]) / 1000000, time_spent);
     }
 }

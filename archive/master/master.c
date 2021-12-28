@@ -88,7 +88,7 @@ int main()
     char size_data_char[MAX_NUM_SIZE];
     char size_buffer_char[MAX_NUM_SIZE];
     sprintf(size_data_char, "%i", size_data);
-    sprintf(size_buffer_char, "%i", size_data);
+    sprintf(size_buffer_char, "%i", size_buffer);
     //initialize children
     pid_t child = fork();
     if (child == -1)
@@ -99,33 +99,35 @@ int main()
     }
     if (child == 0)
     {
-        
-         if (selected_prog == 1){
-             char* realpath_ = realpath(processes_background[0], actualpath);
+
+        if (selected_prog == 1)
+        {
+            char *realpath_ = realpath(processes_background[0], actualpath);
             pids[0] = getpid();
-            execlp(realpath_,realpath_, size_data_char, logname, NULL);
-         }
+            execlp(realpath_, realpath_, size_data_char, logname, NULL);
+        }
         else if (selected_prog == 2)
         {
-            printf("prog 2 1\n");
-            char* realpath_ = realpath(processes_background[1], actualpath);
+            char *realpath_ = realpath(processes_background[1], actualpath);
             pids[0] = getpid();
-            execlp(realpath_,realpath_, size_data_char, logname, NULL);
+            execlp(realpath_, realpath_, size_data_char, logname, NULL);
         }
-        else if (selected_prog == 3){
-            char* realpath_ = realpath(processes_background[3], actualpath);
+        else if (selected_prog == 3)
+        {
+            char *realpath_ = realpath(processes_background[3], actualpath);
             pids[0] = getpid();
-            execlp(realpath_,realpath_, size_data_char, logname, NULL);
+            execlp(realpath_, realpath_, size_data_char, logname, NULL);
         }
         else if (selected_prog == 4)
         {
-            char* realpath_ = realpath(processes_background[5], actualpath);
+            char *realpath_ = realpath(processes_background[5], actualpath);
             pids[0] = getpid();
-            execlp(realpath_,realpath_, size_data_char, size_buffer_char, logname, NULL);
+            execlp(realpath_, realpath_, size_data_char, size_buffer_char, logname, NULL);
         }
     }
-    if (selected_prog != 1)
+    if (selected_prog == 3)
     {
+        sleep(1);
         pid_t child_2 = fork();
         if (child_2 == -1)
         {
@@ -135,26 +137,11 @@ int main()
         }
         if (child_2 == 0)
         {
-            if (selected_prog == 2)
-        {
-            printf("prog 2 2\n");
+
             pids[1] = getpid();
-            char* realpath_2 = realpath(processes_background[2], actualpath);
-            execlp(realpath_2,realpath_2, size_data_char, logname, NULL);
+            char *realpath_2 = realpath(processes_background[4], actualpath);
+            execlp(realpath_2, realpath_2, size_data_char, logname, NULL);
         }
-        else if (selected_prog == 3)
-        {
-            pids[1] = getpid();
-            char* realpath_2 = realpath(processes_background[4], actualpath);
-            execlp(realpath_2,realpath_2, size_data_char, logname, NULL);
-        }
-         else if (selected_prog == 4)
-        {
-            pids[1] = getpid();
-            char* realpath_2 = realpath(processes_background[6], actualpath);
-            execlp(realpath_2,realpath_2, size_data_char, size_buffer_char, logname, NULL);
-        }
-    }
     }
 
     //show pids

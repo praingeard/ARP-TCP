@@ -37,11 +37,18 @@ void *job(int number_sends, int last_send, int length_msg)
     {
         read(fdread, buffer_last, last_send);
     }
+    close(fdread);
+    int ret_value = remove(FIFO_NAME);
+    if (ret_value != 0)
+    {
+        printf("\nremove failed for %s", FIFO_NAME);
+        printf("\nerrno is %d", errno);
+        exit(EXIT_FAILURE);
+    }
 }
 
 int main(int argc, char *argv[])
 {
-     printf("named_pipe_client started with arg %i\n", atoi(argv[1]));
     int LENGTH_MSG = atoi(argv[1]);
     int number_of_sends = 0;
     int last_send = LENGTH_MSG;
@@ -52,10 +59,6 @@ int main(int argc, char *argv[])
         LENGTH_MSG = 10000;
         //printf("%i, %i, %i \n", number_of_sends, last_send, LENGTH_MSG);
     }
-    clock_t begin = clock();
     job(number_of_sends, last_send, LENGTH_MSG);
-    clock_t end = clock();
-    double time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
-    printf("sent %iMB in %f seconds\n", atoi(argv[1]) / 1000000, time_spent);
     return EXIT_SUCCESS;
 }

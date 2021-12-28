@@ -15,6 +15,7 @@ char sem2_fn[] = "my_sem_2";
 /**** READER ****/
 int main(int argc, char *argv[])
 {
+    printf("reader started succesfully\n");
     size_t DATASZ = atoi(argv[1]);
     size_t buffersize = atoi(argv[2]);
 
