@@ -22,7 +22,7 @@ int main(int argc, char *argv[])
         //printf("%i, %i, %i \n", number_of_sends, last_send, LENGTH_MSG);
     }
 
-    char server_reply[2*LENGTH_MSG];
+    char server_reply[2 * LENGTH_MSG];
     int sock;
     struct sockaddr_in server;
 
@@ -30,7 +30,7 @@ int main(int argc, char *argv[])
     sock = socket(AF_INET, SOCK_STREAM, 0);
     if (sock == -1)
     {
-        printf("Could not create socket");
+        printf("Client: Could not create socket");
         fflush(stdout);
     }
 
@@ -41,7 +41,7 @@ int main(int argc, char *argv[])
     //Connect to remote server
     if (connect(sock, (struct sockaddr *)&server, sizeof(server)) < 0)
     {
-        perror("connect failed. Error");
+        perror("Client: connect failed. Error");
         return 1;
     }
 
@@ -65,20 +65,21 @@ int main(int argc, char *argv[])
         //Send some data
         if (send(sock, message, strlen(message), 0) < 0)
         {
-            puts("Send failed");
+            puts("Client: Send failed");
             return 1;
         }
 
         //Receive a reply from the server
-        if (recv(sock, server_reply, 2*strlen(message), 0) < 0)
+        if (recv(sock, server_reply, 2 * strlen(message), 0) < 0)
         {
-            puts("recv failed");
+            puts("Client: recv failed");
             break;
         }
-        number_of_sends --;
+        number_of_sends--;
     }
-    if (last_send != 0){
-     char last_message[last_send];
+    if (last_send != 0)
+    {
+        char last_message[last_send];
         int i, n, rnd;
         srand(time(NULL));
         for (i = 0; i < last_send - 1; ++i)
@@ -86,28 +87,34 @@ int main(int argc, char *argv[])
             rnd = rand();
             n = (rnd >> 4) & 0xF;
             *(last_message + i) = (rnd & 0xF) & 1
-                                 ? (n % 10) + '0'
-                                 : (n % 26) + 'A';
+                                      ? (n % 10) + '0'
+                                      : (n % 26) + 'A';
         }
         last_message[last_send - 1] = 0;
 
         //Send some data
         if (send(sock, last_message, strlen(last_message), 0) < 0)
         {
-            puts("Send failed");
+            puts("Client: Send failed client");
             return 1;
+        }
+        else
+        {
+            puts("Client: Data sent to the server");
         }
 
         //Receive a reply from the server
-        if (recv(sock, server_reply, 2*strlen(last_message), 0) < 0)
+        if (recv(sock, server_reply, 2 * strlen(last_message), 0) < 0)
         {
-            puts("recv failed");
+            puts("Client: recv failed client");
+        }
+        else
+        {
+            puts("Client: Data recieved from the server");
         }
     }
     clock_t end = clock();
     double time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
-    printf("sent %iMB in %f seconds\n",atoi(argv[1])/1000000, time_spent);
-    sleep(1);
-    close(sock);
+    printf("sent %iMB in %f seconds\n", atoi(argv[1]) / 1000000, time_spent);
     return 0;
 }
