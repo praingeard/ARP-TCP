@@ -9,13 +9,14 @@
 #include <time.h>
 #include <stdlib.h>
 
+//define shm pointer and semaphores
 char shm_fn[] = "my_shm";
 char sem_fn[] = "my_sem_1";
 char sem2_fn[] = "my_sem_2";
-/**** READER ****/
+
 int main(int argc, char *argv[])
 {
-    printf("reader started succesfully\n");
+    //parse args
     size_t DATASZ = atoi(argv[1]);
     size_t buffersize = atoi(argv[2]);
 
@@ -37,7 +38,7 @@ int main(int argc, char *argv[])
         perror("mmap failure");
         return 1;
     }
-    /* Open the Semaphore */
+    /* Open the Semaphores */
     sem_new_data = sem_open(sem_fn, 0, 0644, 0);
     if (sem_new_data == (void *)-1)
     {
@@ -50,19 +51,17 @@ int main(int argc, char *argv[])
         perror("sem_open failure");
         return 1;
     }
-    /* Lock the semaphore */
     clock_t begin = clock();
-
-/* here, do your time-consuming job */
-
 
     int count = 0;
     int next_out = 0;
     while (1)
     {
+        //wait for new data
         sem_wait(sem_new_data);
         char new_char = shmptr[next_out];
         count++;
+        //if everything was read, get time
         if (count > DATASZ - 1)
         {
             clock_t end = clock();
@@ -70,7 +69,9 @@ int main(int argc, char *argv[])
             printf("sent %liMB in %f seconds\n",DATASZ/1000000, time_spent);
             break;
         }
+        //get new empty spot
         next_out = (next_out + 1) % buffersize;
+        //signal new space to writer
         sem_post(sem_new_space);
     }
     munmap(shmptr, SHM_SIZE);

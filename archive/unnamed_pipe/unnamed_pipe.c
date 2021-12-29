@@ -4,54 +4,47 @@
 #include <fcntl.h>
 #include <time.h>
 
-void job(int *tube, int number_sends, int last_send, int LENGTH_MSG, int full_size)
+void job(int *tube, int number_sends, int last_send, int LENGTH_MSG)
 {
+    //start the message
     char message[LENGTH_MSG];
     char last_message[last_send];
-    int tid = getpid();
-    // timer pour attendre maximum 5 secondes
-    int i = 5;
-    while (i > 0)
+    if (number_sends != 0)
     {
-        if (number_sends != 0)
+        for (int i = 0; i < number_sends; i++)
         {
-            for (int i = 0; i < number_sends; i++)
-            {
-                // lecture dans le tube
-                read(*tube, message, LENGTH_MSG);
-                //printf("%s\n", message);
-                usleep(100);
-            }
+            // read the tube
+            read(*tube, message, LENGTH_MSG);
+            //printf("%s\n", message);
+            usleep(100);
         }
-        if (last_send != 0)
-        {
-            if (read(*tube, last_message, last_send) > 0)
-            {
-                break;
-            }
-        }
-        else
-        {
-            break;
-        }
-        //sleep(1);
+    }
+    //last send is only used if the last message is shorter than the other ones
+    if (last_send != 0)
+    {
+        read(*tube, last_message, last_send);
     }
 }
 
 int main(int argc, char *argv[])
 {
+    //init clocks
     clock_t begin;
     clock_t end;
     int LENGTH_MSG = atoi(argv[1]);
     int number_of_sends = 0;
     int last_send = LENGTH_MSG;
+
+    //cut the data into groups of 10KB to avoid overflowing the pipe buffer
+    //last message is the remainder (if less than 10KB)
     if (LENGTH_MSG > 10000)
     {
         number_of_sends = LENGTH_MSG / 10000;
         last_send = LENGTH_MSG % 10000;
         LENGTH_MSG = 10000;
-        //printf("%i, %i, %i \n", number_of_sends, last_send, LENGTH_MSG);
     }
+
+    //initialize tube and fork
     int tube[2];
     pipe(tube);
     begin = clock();
@@ -63,12 +56,14 @@ int main(int argc, char *argv[])
     }
     else if (pid == 0)
     {
+        //start reader
         close(tube[1]);
-        job(&tube[0], number_of_sends, last_send, LENGTH_MSG, atoi(argv[1]));
+        job(&tube[0], number_of_sends, last_send, LENGTH_MSG);
         close(tube[0]);
     }
     else
     {
+        //fill message array with random data
         char *message = NULL;
         char *last_message = NULL;
         int i, n, rnd;
@@ -90,11 +85,12 @@ int main(int argc, char *argv[])
                 }
                 message[LENGTH_MSG - 1] = 0;
             }
-
+            //write in the tube
             write(tube[1], message, LENGTH_MSG);
-            //usleep(10000);
         }
         free(message);
+
+        //fill the last message with random data
         if (last_send != 0)
         {
             last_message = malloc(last_send);
@@ -107,9 +103,11 @@ int main(int argc, char *argv[])
                                           : (n % 26) + 'A';
             }
             last_message[last_send - 1] = 0;
+            //send last message
             write(tube[1], last_message, last_send);
             free(last_message);
         }
+        //close the tube and send execution time
         close(tube[1]);
         end = clock();
         double time_spent = (double)(end - begin) / CLOCKS_PER_SEC;

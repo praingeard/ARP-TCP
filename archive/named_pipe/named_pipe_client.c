@@ -10,12 +10,13 @@
 #include <errno.h>
 #include <time.h>
 
+//define fifo
 #define FIFO_NAME "/tmp/named_fifo"
 const mode_t FIFO_MODE = 0660;
 
 void *job(int number_sends, int last_send, int length_msg)
 {
-
+    //open pipe
     int fdread;
     if ((fdread = open(FIFO_NAME, O_RDONLY)) == -1)
     {
@@ -23,6 +24,8 @@ void *job(int number_sends, int last_send, int length_msg)
                 strerror(errno));
         exit(EXIT_FAILURE);
     }
+
+    //read all the messages
     char buffer[length_msg];
     char buffer_last[last_send];
     if (number_sends != 0)
@@ -33,11 +36,13 @@ void *job(int number_sends, int last_send, int length_msg)
             read(fdread, buffer, length_msg);
         }
     }
+    //read last message if it exists
     if (last_send != 0)
     {
         read(fdread, buffer_last, last_send);
     }
     close(fdread);
+    //remove fifo after reading
     int ret_value = remove(FIFO_NAME);
     if (ret_value != 0)
     {
@@ -49,6 +54,7 @@ void *job(int number_sends, int last_send, int length_msg)
 
 int main(int argc, char *argv[])
 {
+    //cut message into 10KB messages
     int LENGTH_MSG = atoi(argv[1]);
     int number_of_sends = 0;
     int last_send = LENGTH_MSG;
@@ -57,8 +63,8 @@ int main(int argc, char *argv[])
         number_of_sends = LENGTH_MSG / 10000;
         last_send = LENGTH_MSG % 10000;
         LENGTH_MSG = 10000;
-        //printf("%i, %i, %i \n", number_of_sends, last_send, LENGTH_MSG);
     }
+    //read messages
     job(number_of_sends, last_send, LENGTH_MSG);
     return EXIT_SUCCESS;
 }

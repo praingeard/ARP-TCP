@@ -9,12 +9,14 @@
 #include <time.h>
 #include <stdlib.h>
 
+//define semaphores and shm
 char shm_fn[] = "my_shm";
 char sem_fn[] = "my_sem_1";
 char sem2_fn[] = "my_sem_2";
-/**** WRITER ****/
+
 int main(int argc, char *argv[])
 {
+    //start reader
     pid_t child = fork();
     char actualpath[100];
     if (child == -1)
@@ -30,6 +32,7 @@ int main(int argc, char *argv[])
     }
     else
     {
+        //parse args and cut message into 100KB parts
         size_t DATASZ = atoi(argv[1]);
         size_t buffersize = atoi(argv[2]);
         int number_of_sends = 0;
@@ -39,9 +42,9 @@ int main(int argc, char *argv[])
             number_of_sends = DATASZ / 100000;
             last_send = DATASZ % 100000;
             DATASZ = 100000;
-            //printf("%i, %i, %i \n", number_of_sends, last_send, DATASZ);
         }
 
+        //create shm pointer
         caddr_t shmptr;
         unsigned int mode;
         int shmdes, index;
@@ -76,6 +79,8 @@ int main(int argc, char *argv[])
             return 1;
         }
         sem_init(sem_new_data, 1, 0);
+
+        //create second semaphore
         sem_new_space = sem_open(sem2_fn, O_CREAT, 0644, 0);
         if (sem_new_space == (void *)-1)
         {
@@ -84,8 +89,7 @@ int main(int argc, char *argv[])
         }
         sem_init(sem_new_space, 1, 0);
 
-        // printf("%li", DATASZ);
-        // fflush(stdout);
+        //fill message with random chars
         char *message;
         message = malloc(DATASZ);
         int i, n, rnd;
@@ -105,17 +109,21 @@ int main(int argc, char *argv[])
 
         while (1)
         {
+            //if the last message was sent, break
             if (number_of_sends == 0 && i > last_send - 1)
             {
                 sleep(1);
                 free(message);
                 break;
             }
+            //wait a free space in the buffer
             if (count == buffersize)
             {
                 sem_wait(sem_new_space);
                 count--;
             }
+
+            //if a message was sent, prepare another one
             if (i > DATASZ - 1)
             {
                 i = 0;
@@ -136,6 +144,7 @@ int main(int argc, char *argv[])
                 }
                 else
                 {
+                    //prepare last message if needed
                     free(message);
                     message = malloc(last_send);
                     int i, n, rnd;
@@ -151,14 +160,16 @@ int main(int argc, char *argv[])
                     message[last_send - 1] = 0;
                 }
             }
+            //fill pointer
             shmptr[next_in] = message[i];
             i++;
+            //get next space
             next_in = (next_in + 1) % buffersize;
             count++;
+            //signal reader that a new space is free
             sem_post(sem_new_data);
         }
         sleep(2);
-        /* Release the semaphore lock */
         munmap(shmptr, SHM_SIZE);
         /* Close the shared memory object */
         close(shmdes);

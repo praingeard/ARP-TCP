@@ -7,16 +7,8 @@
 
 int main(int argc, char *argv[])
 {
+	//define message
 	int length_message = atoi(argv[1]);
-	int number_of_sends = 0;
-	int last_send = length_message;
-	if (length_message > 1000000)
-	{
-		number_of_sends = length_message / 1000000;
-		last_send = length_message % 1000000;
-		length_message = 1000000;
-		//printf("%i, %i, %i \n", number_of_sends, last_send, length_message);
-	}
 	int socket_desc, client_sock, c, read_size;
 	struct sockaddr_in server, client;
 	char client_message[2 * length_message];

@@ -10,7 +10,7 @@
 #include <sys/wait.h>
 #include "../logarp/logarp.h"
 
-#define NUMBER_OF_PROCESSES_BACKGROUND 7
+#define NUMBER_OF_PROCESSES_BACKGROUND 5
 #define NB_FORK 2
 #define MAX_NAME_SIZE 40
 #define MAX_NUM_SIZE 40
@@ -28,25 +28,13 @@ void waitForAll()
     }
 }
 
-pid_t getprogrampid(char *name)
-{
-    char line[80];
-    char command[] = "pidof ";
-    strcat(command, name);
-    FILE *cmd = popen(command, "r");
-    fgets(line, 80, cmd);
-    pid_t pid = strtoul(line, NULL, 10);
-    printf("pid_process %i\n", pid);
-    fflush(stdout);
-    pclose(cmd);
-    return pid;
-}
-
 int main()
 {
+    //defining user input variables
     int selected_prog;
     int size_data;
     int size_buffer;
+
     //logfile initializing
     time_t reft = time(NULL);
     struct tm *timenow;
@@ -58,37 +46,59 @@ int main()
     printf("opening log file : %s \n", logFileName);
     fflush(stdout);
 
+    //getting user inputs
     printf("Enter the desired programs : \n ");
     printf("1 : unnamed pipe \n ");
     printf("2 : named pipe \n ");
     printf("3 : socket \n ");
     printf("4 : circle buffer \n ");
-    scanf("%i", &selected_prog);
+    //checking that the input is what we wanted
+    while (scanf("%d", &selected_prog) != 1 || selected_prog <= 0 || selected_prog > 4)
+    {
+        printf("incorrect input, please enter an integer between 1 and 4\n");
+        while (getchar() != '\n')
+            ;
+    }
 
-    printf("Enter the desired size of data to send in bytes : \n ");
-    scanf("%i", &size_data);
+    //getting the data size
+    printf("Enter the desired size of data to send in Megabytes (max 100MB) : \n ");
+    while (scanf("%d", &size_data) != 1 || size_data <= 0 || size_data > 100)
+    {
+        printf("incorrect input, please enter an integer between 1 and 100\n");
+        while (getchar() != '\n')
+            ;
+    }
+    size_data = size_data * 1000000;
 
+    //getting the buffer size if the user chooses the circle buffer
     if (selected_prog == 4)
     {
-        printf("Enter the desired size of buffer in bytes : \n");
-        scanf("%i", &size_buffer);
+        printf("Enter the desired size of buffer in Kilobytes (max 4KB) : \n");
+        while (scanf("%d", &size_buffer) != 1 || size_buffer <= 0 || size_buffer > 4)
+        {
+            printf("incorrect input, please enter an integer between 1 and 4\n");
+            while (getchar() != '\n')
+                ;
+        }
+        size_buffer = size_buffer * 1000;
     }
 
     //processes to launch in background
     char processes_background[NUMBER_OF_PROCESSES_BACKGROUND][MAX_NAME_SIZE] =
         {"../unnamed_pipe/unnamed_pipe",
          "../named_pipe/named_pipe",
-         "../named_pipe/named_pipe_client",
          "../socket/server",
-         "../socket/client",
          "../circle_buffer/writer",
-         "../circle_buffer/reader"};
+         "../socket/client",};
+    
+    //get the sizes into char format
     char actualpath[100];
     int pids[NB_FORK];
     char size_data_char[MAX_NUM_SIZE];
     char size_buffer_char[MAX_NUM_SIZE];
     sprintf(size_data_char, "%i", size_data);
-    sprintf(size_buffer_char, "%i", size_buffer);
+    sprintf(size_buffer_char, "%i", size_buffer); 
+
     //initialize children
     pid_t child = fork();
     if (child == -1)
@@ -99,32 +109,20 @@ int main()
     }
     if (child == 0)
     {
-
-        if (selected_prog == 1)
-        {
-            char *realpath_ = realpath(processes_background[0], actualpath);
+        //initialize processes
+        if(selected_prog != 4){
+            char *realpath_ = realpath(processes_background[selected_prog-1], actualpath);
             pids[0] = getpid();
             execlp(realpath_, realpath_, size_data_char, logname, NULL);
         }
-        else if (selected_prog == 2)
-        {
-            char *realpath_ = realpath(processes_background[1], actualpath);
+        //add the buffer size if the user chose the circle buffer
+        else{
+            char *realpath_ = realpath(processes_background[selected_prog-1], actualpath);
             pids[0] = getpid();
-            execlp(realpath_, realpath_, size_data_char, logname, NULL);
-        }
-        else if (selected_prog == 3)
-        {
-            char *realpath_ = realpath(processes_background[3], actualpath);
-            pids[0] = getpid();
-            execlp(realpath_, realpath_, size_data_char, logname, NULL);
-        }
-        else if (selected_prog == 4)
-        {
-            char *realpath_ = realpath(processes_background[5], actualpath);
-            pids[0] = getpid();
-            execlp(realpath_, realpath_, size_data_char, size_buffer_char, logname, NULL);
+            execlp(realpath_, realpath_, size_data_char,size_buffer_char, logname, NULL);
         }
     }
+    //starting the client if the user chose the socket
     if (selected_prog == 3)
     {
         sleep(1);
@@ -143,15 +141,7 @@ int main()
             execlp(realpath_2, realpath_2, size_data_char, logname, NULL);
         }
     }
-
-    //show pids
-    printf("Processes started with pids :");
-    for (int i = 0; i < NB_FORK; i++)
-    {
-        printf(" %i ", pids[i]);
-    }
-    printf("\n");
-    fflush(stdout);
+    //wait for children termination
     waitForAll();
     exit(EXIT_SUCCESS);
 }

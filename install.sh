@@ -12,7 +12,9 @@ mv  -v /tmp/archive/archive/* $ARCHIVEVAR
 cd $ARCHIVEVAR
 make 
 make named_pipe/named_pipe
-make circle_buffer/circle_buffer
+make named_pipe/named_pipe_client
+make circle_buffer/writer
+make circle_buffer/reader
 make unnamed_pipe/unnamed_pipe
 make socket/client
 make socket/server

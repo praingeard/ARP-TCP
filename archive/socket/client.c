@@ -1,16 +1,14 @@
-/*
-	C ECHO client example using sockets
-*/
-#include <stdio.h>      //printf
-#include <string.h>     //strlen
-#include <sys/socket.h> //socket
-#include <arpa/inet.h>  //inet_addr
+#include <stdio.h>      
+#include <string.h>     
+#include <sys/socket.h> 
+#include <arpa/inet.h>  
 #include <unistd.h>
 #include <stdlib.h>
 #include <time.h>
 
 int main(int argc, char *argv[])
 {
+    //parse argument and cut messages into 1MB parts
     int LENGTH_MSG = atoi(argv[1]);
     int number_of_sends = 0;
     int last_send = LENGTH_MSG;
@@ -19,9 +17,9 @@ int main(int argc, char *argv[])
         number_of_sends = LENGTH_MSG / 1000000;
         last_send = LENGTH_MSG % 1000000;
         LENGTH_MSG = 1000000;
-        //printf("%i, %i, %i \n", number_of_sends, last_send, LENGTH_MSG);
     }
 
+    //start socket
     char server_reply[2 * LENGTH_MSG];
     int sock;
     struct sockaddr_in server;
@@ -49,6 +47,7 @@ int main(int argc, char *argv[])
     clock_t begin = clock();
     while (number_of_sends != 0)
     {
+        //fill message with random char
         char message[LENGTH_MSG];
         int i, n, rnd;
         srand(time(NULL));
@@ -62,7 +61,7 @@ int main(int argc, char *argv[])
         }
         message[LENGTH_MSG - 1] = 0;
 
-        //Send some data
+        //Send message
         if (send(sock, message, strlen(message), 0) < 0)
         {
             puts("Client: Send failed");
@@ -77,6 +76,7 @@ int main(int argc, char *argv[])
         }
         number_of_sends--;
     }
+    //same for the last message
     if (last_send != 0)
     {
         char last_message[last_send];
@@ -113,6 +113,7 @@ int main(int argc, char *argv[])
             puts("Client: Data recieved from the server");
         }
     }
+    //end clock and print exec time
     clock_t end = clock();
     double time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
     printf("sent %iMB in %f seconds\n", atoi(argv[1]) / 1000000, time_spent);
